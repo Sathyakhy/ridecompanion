@@ -14,7 +14,328 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attachments: {
+        Row: {
+          bike_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          id: string
+          maintenance_id: string | null
+          user_id: string
+        }
+        Insert: {
+          bike_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          id?: string
+          maintenance_id?: string | null
+          user_id: string
+        }
+        Update: {
+          bike_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          id?: string
+          maintenance_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachments_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachments_maintenance_id_fkey"
+            columns: ["maintenance_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bikes: {
+        Row: {
+          created_at: string
+          current_odometer: number
+          id: string
+          model: string | null
+          name: string
+          photo_path: string | null
+          plate_number: string | null
+          purchase_date: string | null
+          purchase_price: number | null
+          updated_at: string
+          user_id: string
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          created_at?: string
+          current_odometer?: number
+          id?: string
+          model?: string | null
+          name: string
+          photo_path?: string | null
+          plate_number?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          updated_at?: string
+          user_id: string
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          created_at?: string
+          current_odometer?: number
+          id?: string
+          model?: string | null
+          name?: string
+          photo_path?: string | null
+          plate_number?: string | null
+          purchase_date?: string | null
+          purchase_price?: number | null
+          updated_at?: string
+          user_id?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          amount: number
+          bike_id: string
+          category: string
+          created_at: string
+          expense_date: string
+          id: string
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          bike_id: string
+          category?: string
+          created_at?: string
+          expense_date?: string
+          id?: string
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          bike_id?: string
+          category?: string
+          created_at?: string
+          expense_date?: string
+          id?: string
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fuel_logs: {
+        Row: {
+          bike_id: string
+          cost: number
+          created_at: string
+          fill_date: string
+          fuel_type: string | null
+          id: string
+          liters: number
+          odometer: number
+          user_id: string
+        }
+        Insert: {
+          bike_id: string
+          cost?: number
+          created_at?: string
+          fill_date?: string
+          fuel_type?: string | null
+          id?: string
+          liters?: number
+          odometer?: number
+          user_id: string
+        }
+        Update: {
+          bike_id?: string
+          cost?: number
+          created_at?: string
+          fill_date?: string
+          fuel_type?: string | null
+          id?: string
+          liters?: number
+          odometer?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fuel_logs_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_records: {
+        Row: {
+          bike_id: string
+          categories: string[]
+          created_at: string
+          id: string
+          labor_cost: number
+          notes: string | null
+          odometer: number
+          parts_cost: number
+          service_date: string
+          updated_at: string
+          user_id: string
+          workshop: string | null
+        }
+        Insert: {
+          bike_id: string
+          categories?: string[]
+          created_at?: string
+          id?: string
+          labor_cost?: number
+          notes?: string | null
+          odometer?: number
+          parts_cost?: number
+          service_date?: string
+          updated_at?: string
+          user_id: string
+          workshop?: string | null
+        }
+        Update: {
+          bike_id?: string
+          categories?: string[]
+          created_at?: string
+          id?: string
+          labor_cost?: number
+          notes?: string | null
+          odometer?: number
+          parts_cost?: number
+          service_date?: string
+          updated_at?: string
+          user_id?: string
+          workshop?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_records_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminders: {
+        Row: {
+          bike_id: string
+          created_at: string
+          done: boolean
+          due_date: string | null
+          due_odometer: number | null
+          id: string
+          reminder_type: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          bike_id: string
+          created_at?: string
+          done?: boolean
+          due_date?: string | null
+          due_odometer?: number | null
+          id?: string
+          reminder_type?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          bike_id?: string
+          created_at?: string
+          done?: boolean
+          due_date?: string | null
+          due_odometer?: number | null
+          id?: string
+          reminder_type?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_schedules: {
+        Row: {
+          bike_id: string
+          created_at: string
+          id: string
+          interval_km: number | null
+          interval_months: number | null
+          item: string
+          last_service_date: string | null
+          last_service_odometer: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bike_id: string
+          created_at?: string
+          id?: string
+          interval_km?: number | null
+          interval_months?: number | null
+          item: string
+          last_service_date?: string | null
+          last_service_odometer?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bike_id?: string
+          created_at?: string
+          id?: string
+          interval_km?: number | null
+          interval_months?: number | null
+          item?: string
+          last_service_date?: string | null
+          last_service_odometer?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_schedules_bike_id_fkey"
+            columns: ["bike_id"]
+            isOneToOne: false
+            referencedRelation: "bikes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
