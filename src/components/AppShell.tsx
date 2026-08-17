@@ -59,7 +59,7 @@ export function AppShell({
           </Link>
           <div className="ml-auto flex items-center gap-2">
             {bikes.length > 0 && (
-              <Select value={bikeId ?? undefined} onValueChange={selectBike}>
+              <Select value={bikeId ?? ""} onValueChange={selectBike}>
                 <SelectTrigger className="h-9 w-[9.5rem] text-sm">
                   <SelectValue placeholder="Select bike" />
                 </SelectTrigger>
