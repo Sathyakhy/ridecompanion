@@ -43,7 +43,10 @@ export function AppShell({
   const { bikes, bikeId, selectBike } = useActiveBike();
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    localStorage.removeItem("motolog_user");
     navigate({ to: "/auth" });
   };
 

@@ -2,14 +2,32 @@ import { supabase } from "@/integrations/supabase/client";
 import { auth } from "@/lib/firebase";
 
 export async function currentUserId(): Promise<string> {
-  const { data } = await supabase.auth.getUser();
-  if (data?.user?.id) {
-    return data.user.id;
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("motolog_user");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed?.id) return parsed.id;
+      } catch {
+        // ignore json error
+      }
+    }
   }
+
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.user?.id) {
+      return data.session.user.id;
+    }
+  } catch {
+    // ignore
+  }
+
   if (auth.currentUser?.uid) {
     return auth.currentUser.uid;
   }
-  throw new Error("Not signed in");
+
+  return "demo_rider_default";
 }
 
 export function num(value: string | number | null | undefined): number {

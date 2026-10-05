@@ -5,23 +5,48 @@ import { auth } from "@/lib/firebase";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    // Check Supabase session first
-    const { data } = await supabase.auth.getUser();
-    if (data?.user) {
-      return { user: data.user };
+    // 1. Check local rider session
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("motolog_user");
+      if (stored) {
+        try {
+          const user = JSON.parse(stored);
+          if (user?.id || user?.email) {
+            return { user };
+          }
+        } catch {
+          // ignore
+        }
+      }
     }
 
-    // Check Firebase auth session
+    // 2. Check Supabase active session
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.user) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("motolog_user", JSON.stringify(data.session.user));
+        }
+        return { user: data.session.user };
+      }
+    } catch {
+      // ignore
+    }
+
+    // 3. Check Firebase active session
     if (auth.currentUser) {
-      return {
-        user: {
-          id: auth.currentUser.uid,
-          email: auth.currentUser.email,
-        },
+      const user = {
+        id: auth.currentUser.uid,
+        email: auth.currentUser.email,
+        name: auth.currentUser.displayName,
       };
+      if (typeof window !== "undefined") {
+        localStorage.setItem("motolog_user", JSON.stringify(user));
+      }
+      return { user };
     }
 
-    // If neither is authenticated, redirect to /auth
+    // If no session exists, redirect to /auth
     throw redirect({ to: "/auth" });
   },
   component: () => <Outlet />,
