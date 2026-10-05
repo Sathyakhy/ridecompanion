@@ -30,31 +30,41 @@ function AuthPage() {
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) return toast.error(error.message);
-    navigate({ to: "/dashboard" });
+    toast.success("Welcome back!");
+    navigate({ to: "/garage" });
   };
 
   const signUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
       password,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+      options: { emailRedirectTo: `${window.location.origin}/garage` },
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success("Account created. You're signed in.");
-    navigate({ to: "/dashboard" });
+    if (data.session) {
+      toast.success("Account created. Welcome to MotoLog!");
+      navigate({ to: "/garage" });
+    } else {
+      toast.success("Account created! Please check your email if confirmation is required.");
+      navigate({ to: "/garage" });
+    }
   };
 
   const google = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin });
-    if (result.error) return toast.error("Google sign-in failed");
-    if (result.redirected) return;
-    navigate({ to: "/dashboard" });
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/garage` });
+      if (result.error) return toast.error("Google sign-in is not configured. Please use email & password.");
+      if (result.redirected) return;
+      navigate({ to: "/garage" });
+    } catch {
+      toast.error("Google sign-in is not configured. Please use email & password.");
+    }
   };
 
   return (
