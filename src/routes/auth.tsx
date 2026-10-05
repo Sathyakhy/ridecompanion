@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { Bike } from "lucide-react";
+import { Bike, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+import { auth, googleAuthProvider } from "@/lib/firebase";
+import { signInWithPopup } from "firebase/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,16 +30,55 @@ function AuthPage() {
 
   const signIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password) {
+      toast.error("Please enter both email and password.");
+      return;
+    }
     setBusy(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+
+    if (error) {
+      // If user doesn't exist yet, try creating the account seamlessly
+      if (error.message.toLowerCase().includes("invalid login credentials")) {
+        const signupRes = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+        });
+
+        if (signupRes.error) {
+          setBusy(false);
+          return toast.error(error.message);
+        }
+
+        if (signupRes.data.session) {
+          setBusy(false);
+          toast.success("New account created and signed in!");
+          navigate({ to: "/garage" });
+          return;
+        } else {
+          setBusy(false);
+          toast.info("Account created. Please check your email to confirm if required, or try Instant Demo.");
+          return;
+        }
+      }
+      setBusy(false);
+      return toast.error(error.message);
+    }
+
     setBusy(false);
-    if (error) return toast.error(error.message);
     toast.success("Welcome back!");
     navigate({ to: "/garage" });
   };
 
   const signUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.trim() || !password) {
+      toast.error("Please enter email and password.");
+      return;
+    }
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
@@ -48,22 +88,80 @@ function AuthPage() {
     setBusy(false);
     if (error) return toast.error(error.message);
     if (data.session) {
-      toast.success("Account created. Welcome to MotoLog!");
+      toast.success("Account created! Welcome to MotoLog.");
       navigate({ to: "/garage" });
     } else {
-      toast.success("Account created! Please check your email if confirmation is required.");
+      toast.success("Account created! Please check your inbox or sign in.");
       navigate({ to: "/garage" });
     }
   };
 
-  const google = async () => {
+  const instantGuestLogin = async () => {
+    setBusy(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: `${window.location.origin}/garage` });
-      if (result.error) return toast.error("Google sign-in is not configured. Please use email & password.");
-      if (result.redirected) return;
-      navigate({ to: "/garage" });
-    } catch {
-      toast.error("Google sign-in is not configured. Please use email & password.");
+      // Try signing in anonymously or with demo credentials
+      const res = await supabase.auth.signInAnonymously();
+      if (!res.error && res.data.session) {
+        setBusy(false);
+        toast.success("Signed in as Guest!");
+        navigate({ to: "/garage" });
+        return;
+      }
+
+      // Fallback demo account
+      const demoEmail = "demo.rider@motolog.app";
+      const demoPass = "MotoLog2026!";
+      const demoRes = await supabase.auth.signInWithPassword({
+        email: demoEmail,
+        password: demoPass,
+      });
+
+      if (demoRes.error) {
+        const createDemo = await supabase.auth.signUp({
+          email: demoEmail,
+          password: demoPass,
+        });
+        if (createDemo.data.session) {
+          setBusy(false);
+          toast.success("Signed in as Demo Rider!");
+          navigate({ to: "/garage" });
+          return;
+        }
+      } else {
+        setBusy(false);
+        toast.success("Signed in as Demo Rider!");
+        navigate({ to: "/garage" });
+        return;
+      }
+
+      // If Supabase guest auth is restricted, fill email and password for the user
+      setEmail("rider@example.com");
+      setPassword("password123");
+      setBusy(false);
+      toast.info("Demo credentials loaded. Click 'Sign in' or 'Create account'.");
+    } catch (err: any) {
+      setBusy(false);
+      toast.error(err.message || "Could not start guest session");
+    }
+  };
+
+  const googleSignIn = async () => {
+    setBusy(true);
+    try {
+      // Firebase Google Sign In popup
+      const result = await signInWithPopup(auth, googleAuthProvider);
+      if (result.user) {
+        toast.success(`Signed in as ${result.user.displayName || result.user.email}`);
+        setBusy(false);
+        navigate({ to: "/garage" });
+        return;
+      }
+    } catch (err: any) {
+      console.warn("Firebase popup failed, trying fallback:", err);
+      // Fallback info
+      toast.info("Google Sign-In popup closed or requires popup permission.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -88,14 +186,28 @@ function AuthPage() {
               <form onSubmit={signIn} className="space-y-3 pt-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="password">Password</Label>
-                  <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
-                  Sign in
+                  {busy ? "Signing in..." : "Sign in"}
                 </Button>
               </form>
             </TabsContent>
@@ -104,7 +216,14 @@ function AuthPage() {
               <form onSubmit={signUp} className="space-y-3 pt-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="email2">Email</Label>
-                  <Input id="email2" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <Input
+                    id="email2"
+                    type="email"
+                    required
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="password2">Password</Label>
@@ -113,12 +232,13 @@ function AuthPage() {
                     type="password"
                     required
                     minLength={6}
+                    placeholder="At least 6 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={busy}>
-                  Create account
+                  {busy ? "Creating account..." : "Create account"}
                 </Button>
               </form>
             </TabsContent>
@@ -129,9 +249,29 @@ function AuthPage() {
             or
             <span className="h-px flex-1 bg-border" />
           </div>
-          <Button variant="secondary" className="w-full" onClick={google}>
-            Continue with Google
-          </Button>
+
+          <div className="space-y-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full font-medium"
+              disabled={busy}
+              onClick={instantGuestLogin}
+            >
+              <Sparkles className="mr-2 h-4 w-4 text-amber-500" />
+              Instant Rider Login
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              className="w-full"
+              disabled={busy}
+              onClick={googleSignIn}
+            >
+              Continue with Google
+            </Button>
+          </div>
         </div>
       </div>
     </div>
